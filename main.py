@@ -146,9 +146,6 @@ class MyClient(discord.Client):
 
     # 再生監視とキューの取り出し、TODO
     def playQueue(self,message):
-        print(self.isPlaydQueue)
-        print(not message.guild.voice_client.is_playing())
-        print(not self.q.empty())
         if (self.isPlaydQueue):
             if (not message.guild.voice_client.is_playing()):
                 if (not self.q.empty()):
