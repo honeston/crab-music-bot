@@ -25,7 +25,7 @@ skip now plaing music.
 
 show music list.
 
-## -lool\p
+## -loolp
 
 play loop music list.
 
