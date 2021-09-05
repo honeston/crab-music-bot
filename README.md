@@ -21,6 +21,14 @@ add music to list form youtube.
 
 skip now plaing music.
 
+## -list
+
+show music list.
+
+## -lool\p
+
+play loop music list.
+
 ## -stop
 
 stop play music and clear list.
