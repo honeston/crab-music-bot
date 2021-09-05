@@ -17,8 +17,11 @@ with open('product.yaml', 'r') as yml:
     config = yaml.load(yml)
 
 class MyClient(discord.Client):
-    q = queue.Queue()
+    playList = []
     isPlaydQueue = False
+    nextPlayCount = 0
+    nowPlayCount = 0
+    isLoop = False
     
     # コンストラクタ
     def __init__(self, youtubeAPIkey):
@@ -42,25 +45,25 @@ class MyClient(discord.Client):
         # post
         if len(contentList) >= 2 and (contentList[0] == '-p' or contentList[0] == '-post'):
             if message.author.voice is None:
-                await message.channel.send("あなたはボイスチャンネルに接続していません。")
+                await message.channel.send("You are not connected to a voice channel.")
                 return
-                
+
             if message.guild.voice_client is None:
                 # ボイスチャンネルに接続する
                 await message.author.voice.channel.connect()
-                await message.channel.send("接続しました。")
+                await message.channel.send("connected")
 
             await self.popCommand(message,contentList)
 
         # join
         if content == '-join':
             if message.author.voice is None:
-                await message.channel.send("あなたはボイスチャンネルに接続していません。")
+                await message.channel.send("You are not connected to a voice channel.")
                 return
 
             # ボイスチャンネルに接続する
             await message.author.voice.channel.connect()
-            await message.channel.send("接続しました。")
+            await message.channel.send("connected")
 
         # leave
         elif content == '-leave':
@@ -75,15 +78,42 @@ class MyClient(discord.Client):
         elif content == '-stop':
             print("stop")
             message.guild.voice_client.stop()
-            while not self.q.empty():
-                print(self.q.get())
+            self.ini()
 
         # next
         elif content == '-n':
             print("next")
             message.guild.voice_client.stop()
 
-    # -p のコマンド受信
+        # list
+        elif content == '-list':
+            print("list")
+            await self.showList(message)
+
+        # loop
+        elif content == '-loop':
+            print("loop")
+            self.loopList(True)
+
+
+    async def on_voice_state_update(self,member, before, after):
+        print("leave")
+        if member != client.user:
+            return
+        if after.channel is None:
+            print("leave bot")
+            self.ini()
+  
+
+    def ini(self):
+        self.isPlaydQueue = False
+        self.nextPlayCount = 0
+        self.nowPlayCount = 0
+        self.isLoop = False
+        self.playList.clear()
+
+
+    # -p のコマンド受信時
     async def popCommand(self,message,arg):
         if message.guild.voice_client is None:
             # ボイスチャンネルに接続する
@@ -112,11 +142,28 @@ class MyClient(discord.Client):
         musicData = MusicData(url,title,thumbnails)
 
         # embed の作成
-        embed = discord.Embed(title="add music",description=title)
+        embed = discord.Embed(title="🦀 add music 🦀",description=title)
         embed.set_thumbnail(url=thumbnails)
         await message.channel.send(embed=embed)
 
         self.addQueue(message,musicData)
+
+    # -listのコマンド受信時
+    async def showList(self,message):
+        #　listに追加
+        # embed の作成
+        embed = discord.Embed(title="🦀 music list 🦀", color=0x00a895)
+        for i, data in enumerate(self.playList):
+            play = "▶ " if i == self.nowPlayCount else ""
+            embed.add_field(name="no."+str(i+1), value= play + data.title, inline=False)
+        await message.channel.send(embed=embed)
+        print(self.nextPlayCount)
+        print(len(self.playList))
+
+    # -listのコマンド受信時
+    def loopList(self,isLoop):
+        self.isLoop = isLoop
+
 
     # 検索用フォーマットの作成
     def cleateQuote(self,quoteList):
@@ -137,22 +184,27 @@ class MyClient(discord.Client):
 
     # キューの追加
     def addQueue(self, message ,data):
-        #　キューに追加
-        self.q.put(data)
+        #　listに追加
+        self.playList.append(data)
         if not self.isPlaydQueue:
             self.isPlaydQueue = True
             self.playQueue(message)
+        
 
     # 再生監視とキューの取り出し、TODO
     def playQueue(self,message):
         if (self.isPlaydQueue):
             if (not message.guild.voice_client.is_playing()):
-                if (not self.q.empty()):
-                    url = self.q.get().url
+                if self.isLoop and self.nextPlayCount >= len(self.playList):
+                    self.nextPlayCount = 0
+                if (self.nextPlayCount < len(self.playList)):
+                    self.nowPlayCount = self.nextPlayCount
+                    url = self.playList[self.nextPlayCount].url
                     video= pafy.new(url)
                     best= video.getbestaudio()
                     print(video.length)
                     print(video.duration)
+                    self.nextPlayCount+=1
                     message.guild.voice_client.play(discord.FFmpegPCMAudio(best.url))
                     timer = Timer(3, self.playQueue, (message, ))
                     timer.start()
