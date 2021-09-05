@@ -36,16 +36,15 @@ class MyClient(discord.Client):
 
         print('Message from {0.author}: {0.content}'.format(message))
 
-        # ボイスチャンネルにいないユーザーは操作できない
-        if message.author.voice is None:
-            await message.channel.send("あなたはボイスチャンネルに接続していません。")
-            return
-
         content = message.content
         contentList = content.split(' ')
 
         # post
         if len(contentList) >= 2 and (contentList[0] == '-p' or contentList[0] == '-post'):
+            if message.author.voice is None:
+                await message.channel.send("あなたはボイスチャンネルに接続していません。")
+                return
+                
             if message.guild.voice_client is None:
                 # ボイスチャンネルに接続する
                 await message.author.voice.channel.connect()
