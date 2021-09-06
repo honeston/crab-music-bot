@@ -95,6 +95,17 @@ class MyClient(discord.Client):
             print("loop")
             self.loopList(True)
 
+        # post
+        if len(contentList) >= 2 and (contentList[0] == '-r' or contentList[0] == '-remove'):
+            if not contentList[1].isdigit():
+                await message.channel.send("Please enter number")
+                return
+            num = int(contentList[1])
+            if len(self.playList) < num or num <=0:
+                await message.channel.send("out of range")
+                return
+            del self.playList[num-1]
+            await message.channel.send("delete no." + str(num))
 
     async def on_voice_state_update(self,member, before, after):
         print("leave")
