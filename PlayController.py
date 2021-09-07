@@ -25,6 +25,15 @@ class PlayController:
         print("loop")
         self.isLoop = isLoop
 
+    def remove(self,num):
+        print("remove")
+        if not num.isdigit():
+            return -1
+        num = int(num)
+        if len(self.playList) < num or num <=0:
+            return -2
+        del self.playList[num-1]
+
     # 再生監視とキューの取り出し、TODO
     def playQueue(self,message):
         if (self.isPlaydQueue):
@@ -33,7 +42,7 @@ class PlayController:
                     self.nextPlayCount = 0
                 if (self.nextPlayCount < len(self.playList)):
                     self.nowPlayCount = self.nextPlayCount
-                    url = self.playList[self.nextPlayCount].url
+                    url = self.playList[self.nextPlayCount]['url']
                     video= pafy.new(url)
                     best= video.getbestaudio()
                     print(video.length)
