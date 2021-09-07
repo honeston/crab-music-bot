@@ -11,31 +11,36 @@
 # Usage
 you can use discord text chat command.
 ## -join 
-  join your voice channel(you need join voice channel).
 
-## -p "search key"
+join your voice channel(you need to join any voice channel).
 
-add music to list form youtube.
+## -p `search word`
+
+add music to playlist form youtube.
 
 ## -n
 
-skip now plaing music.
+go to next music in playList.
 
 ## -list
 
-show music list.
+show playlist.
 
-## -loolp
+## -loop
 
 play loop music list.
 
+## -r `track number`
+
+remove track number in playlist.
+
 ## -stop
 
-stop play music and clear list.
+stop play music and clear playlist.
 
 ## -leave
 
-leave your voice channel.
+leave current voice channel.
 
 
 # License
