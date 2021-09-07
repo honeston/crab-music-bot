@@ -1,11 +1,9 @@
 import discord
 import logging
-import yaml
-import pafy
-import requests
-import queue
-from threading import Timer
-import urllib.parse
+from Config import *
+from MusicDataSet import MusicData
+from PlayController import playController
+from YoutubeDataAPI import youtubeDataAPI
 
 logger = logging.getLogger('discord')
 logger.setLevel(logging.DEBUG)
@@ -13,20 +11,7 @@ handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w'
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
 
-with open('product.yaml', 'r') as yml:
-    config = yaml.load(yml)
-
 class MyClient(discord.Client):
-    playList = []
-    isPlaydQueue = False
-    nextPlayCount = 0
-    nowPlayCount = 0
-    isLoop = False
-    
-    # コンストラクタ
-    def __init__(self, youtubeAPIkey):
-        super().__init__()
-        self.youtubeAPIkey = youtubeAPIkey
 
     # 準備完了
     async def on_ready(self):
@@ -78,7 +63,7 @@ class MyClient(discord.Client):
         elif content == '-stop':
             print("stop")
             message.guild.voice_client.stop()
-            self.ini()
+            playController.stop()
 
         # next
         elif content == '-n':
@@ -93,7 +78,7 @@ class MyClient(discord.Client):
         # loop
         elif content == '-loop':
             print("loop")
-            self.loopList(True)
+            playController.loop(True)
 
         # post
         if len(contentList) >= 2 and (contentList[0] == '-r' or contentList[0] == '-remove'):
@@ -108,21 +93,11 @@ class MyClient(discord.Client):
             await message.channel.send("delete no." + str(num))
 
     async def on_voice_state_update(self,member, before, after):
-        print("leave")
         if member != client.user:
             return
         if after.channel is None:
             print("leave bot")
-            self.ini()
-  
-
-    def ini(self):
-        self.isPlaydQueue = False
-        self.nextPlayCount = 0
-        self.nowPlayCount = 0
-        self.isLoop = False
-        self.playList.clear()
-
+            playController.ini()
 
     # -p のコマンド受信時
     async def popCommand(self,message,arg):
@@ -133,20 +108,10 @@ class MyClient(discord.Client):
 
         # 先頭の'-p'を削除
         del arg[0]
-        queueMessage = self.cleateQuote(arg)
-
-        # youtubeで検索！
-        response = self.requestsYoutube(queueMessage,self.youtubeAPIkey)
-
-
-        # 検索結果の有無チェック
-        if len(response["items"]) < 1:
-            await message.channel.send("not hit")
-            return
 
         # 検索トップのアイテム
-        firstItem = response["items"][0]
-        url= "https://www.youtube.com/watch?v="+ firstItem["id"]["videoId"]
+        firstItem = youtubeDataAPI.getTopSearchResults(arg)
+        url= youtubeDataAPI.getURL(firstItem)
         title = firstItem["snippet"]["title"]
         thumbnails = firstItem["snippet"]["thumbnails"]["default"]["url"]
 
@@ -157,79 +122,17 @@ class MyClient(discord.Client):
         embed.set_thumbnail(url=thumbnails)
         await message.channel.send(embed=embed)
 
-        self.addQueue(message,musicData)
+        playController.addQueue(message,musicData)
 
     # -listのコマンド受信時
     async def showList(self,message):
         #　listに追加
         # embed の作成
         embed = discord.Embed(title="🦀 music list 🦀", color=0x00a895)
-        for i, data in enumerate(self.playList):
-            play = "▶ " if i == self.nowPlayCount else ""
+        for i, data in enumerate(playController.playList):
+            play = "▶ " if i == playController.nowPlayCount else ""
             embed.add_field(name="no."+str(i+1), value= play + data.title, inline=False)
         await message.channel.send(embed=embed)
-        print(self.nextPlayCount)
-        print(len(self.playList))
 
-    # -listのコマンド受信時
-    def loopList(self,isLoop):
-        self.isLoop = isLoop
-
-
-    # 検索用フォーマットの作成
-    def cleateQuote(self,quoteList):
-        quote=""
-        for i, quoteMessage in enumerate(quoteList):
-            quote += "+" + urllib.parse.quote(quoteMessage)
-        
-        return quote
-
-    # youtubeで検索(return辞書型,json)
-    def requestsYoutube(self,quote,APIkey):
-        responseData = requests.get('https://www.googleapis.com/youtube/v3/search?type=video&part=snippet&q='+quote+'&key='+APIkey)
-        print(quote)
-        if responseData.status_code < 200 or responseData.status_code > 199:
-            print("access error:")
-            #ここにエラー処理TODO
-        return responseData.json()
-
-    # キューの追加
-    def addQueue(self, message ,data):
-        #　listに追加
-        self.playList.append(data)
-        if not self.isPlaydQueue:
-            self.isPlaydQueue = True
-            self.playQueue(message)
-        
-
-    # 再生監視とキューの取り出し、TODO
-    def playQueue(self,message):
-        if (self.isPlaydQueue):
-            if (not message.guild.voice_client.is_playing()):
-                if self.isLoop and self.nextPlayCount >= len(self.playList):
-                    self.nextPlayCount = 0
-                if (self.nextPlayCount < len(self.playList)):
-                    self.nowPlayCount = self.nextPlayCount
-                    url = self.playList[self.nextPlayCount].url
-                    video= pafy.new(url)
-                    best= video.getbestaudio()
-                    print(video.length)
-                    print(video.duration)
-                    self.nextPlayCount+=1
-                    message.guild.voice_client.play(discord.FFmpegPCMAudio(best.url))
-                    timer = Timer(3, self.playQueue, (message, ))
-                    timer.start()
-                else:
-                    self.isPlaydQueue = False
-            else:
-                timer = Timer(3, self.playQueue, (message, ))
-                timer.start()
-
-class MusicData:
-    def __init__(self, url=None,title=None,thumbnails=None):
-        self.url = url
-        self.title = title
-        self.thumbnails = thumbnails
-
-client = MyClient(config['apikey']['youtube'])
-client.run(config['apikey']['discord'])
+client = MyClient()
+client.run(DIDCODE_TOKEN)
