@@ -47,8 +47,9 @@ class DiscordClient(discord.Client):
         print('Message from {0.author}: {0.content}'.format(message))
 
         # post
-        if len(contentList) >= 2 and (inputCommand in self.commandList['post']):
-            await self.popCommand(message,contentList)
+        if inputCommand in self.commandList['post']:
+            if len(contentList) >= 2:
+                await self.popCommand(message,contentList)
 
         # join
         elif inputCommand in self.commandList['join']:
@@ -84,13 +85,14 @@ class DiscordClient(discord.Client):
             playController.loop(True)
 
         # remove
-        elif len(contentList) >= 2 and (inputCommand in self.commandList['remove']):
-            err = playController.remove(contentList[1])
-            if err == -1:
-                await message.channel.send("Please enter number")
-            if err == -2:
-                await message.channel.send("out of range")
-            await message.channel.send("delete no." + contentList[1])
+        elif inputCommand in self.commandList['remove']:
+            if len(contentList) >= 2:
+                err = playController.remove(contentList[1])
+                if err == -1:
+                    await message.channel.send("Please enter number")
+                if err == -2:
+                    await message.channel.send("out of range")
+                await message.channel.send("delete no." + contentList[1])
 
     async def on_voice_state_update(self,member, before, after):
         if member != self.user:
@@ -128,7 +130,8 @@ class DiscordClient(discord.Client):
     async def showList(self,message):
         #　listに追加
         # embed の作成
-        embed = discord.Embed(title="🦀 music list 🦀", color=0x00a895)
+        tilte = "🦀 music list {0}🦀".format("🔁" if playController.isLoop else "")
+        embed = discord.Embed(title=tilte, color=0x00a895)
         for i, data in enumerate(playController.playList):
             play = "▶ " if i == playController.nowPlayCount else ""
             embed.add_field(name="no."+str(i+1), value= play + data['title'], inline=False)
