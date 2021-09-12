@@ -2,6 +2,7 @@ import discord
 from Config import *
 from PlayController import playController
 from YoutubeDataAPI import youtubeDataAPI
+from DataIO import save,load
 
 class DiscordClient(discord.Client):
 
@@ -12,6 +13,8 @@ class DiscordClient(discord.Client):
                     "list":["-list"],\
                     "next":["-next","-n"],\
                     "remove":["-remove","-r"],\
+                    "save":["-save"],\
+                    "load":["-load"],\
                     "loop":["-loop"]}
 
     # 準備完了
@@ -78,6 +81,22 @@ class DiscordClient(discord.Client):
         elif inputCommand in self.commandList['list']:
             print("list")
             await self.showList(message)
+
+        # save
+        elif inputCommand in self.commandList['save']:
+            print("save")
+            if len(contentList) >= 2:
+                save(playController.playList,contentList[1])
+            else:
+                save(playController.playList)
+
+        # load
+        elif inputCommand in self.commandList['load']:
+            print("load")
+            if len(contentList) >= 2:
+                playController.playList = load(contentList[1])
+            else:
+                playController.playList = load()
 
         # loop
         elif inputCommand in self.commandList['loop']:
