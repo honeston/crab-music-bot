@@ -7,6 +7,7 @@ from DataIO import save,load
 class DiscordClient(discord.Client):
 
     commandList = {"post":["-post","-p"],\
+                    "play":["-play"],\
                     "join":["-join","-j"],\
                     "leave":["-leave"],\
                     "stop":["-stop","-s"],\
@@ -53,6 +54,9 @@ class DiscordClient(discord.Client):
         if inputCommand in self.commandList['post']:
             if len(contentList) >= 2:
                 await self.popCommand(message,contentList)
+        # play
+        elif inputCommand in self.commandList['play']:
+            playController.play(message)
 
         # join
         elif inputCommand in self.commandList['join']:
@@ -69,13 +73,12 @@ class DiscordClient(discord.Client):
         # stop
         elif inputCommand in self.commandList['stop']:
             print("stop")
-            message.guild.voice_client.stop()
-            playController.stop()
+            playController.stop(message)
 
         # next
         elif inputCommand in self.commandList['next']:
             print("next")
-            message.guild.voice_client.stop()
+            playController.next(message)
 
         # list
         elif inputCommand in self.commandList['list']:
@@ -93,10 +96,13 @@ class DiscordClient(discord.Client):
         # load
         elif inputCommand in self.commandList['load']:
             print("load")
+            playController.ini()
             if len(contentList) >= 2:
                 playController.playList = load(contentList[1])
             else:
                 playController.playList = load()
+
+            playController.play(message)
 
         # loop
         elif inputCommand in self.commandList['loop']:
