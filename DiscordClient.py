@@ -102,7 +102,7 @@ class DiscordClient(discord.Client):
             else:
                 playController.playList = load()
 
-            playController.play(message)
+            playController.next(message)
 
         # loop
         elif inputCommand in self.commandList['loop']:
