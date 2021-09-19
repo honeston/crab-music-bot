@@ -3,6 +3,7 @@ from Config import *
 from PlayController import playController
 from YoutubeDataAPI import youtubeDataAPI
 from DataIO import save,load
+from Speak import createVoice
 
 class DiscordClient(discord.Client):
 
@@ -16,6 +17,7 @@ class DiscordClient(discord.Client):
                     "remove":["-remove","-r"],\
                     "save":["-save"],\
                     "load":["-load"],\
+                    "speak":["-speak","-sp"],\
                     "loop":["-loop"]}
 
     # 準備完了
@@ -108,6 +110,14 @@ class DiscordClient(discord.Client):
         elif inputCommand in self.commandList['loop']:
             print("loop")
             playController.loop(True)
+        
+        # speak
+        elif inputCommand in self.commandList['speak']:
+            print("speak")
+            # https://github.com/Hiroshiba/voicevox_engine
+            if SPEAK_ISAVAILABLE:
+                filename = createVoice(contentList[1])
+                message.guild.voice_client.play(discord.FFmpegPCMAudio(filename))
 
         # remove
         elif inputCommand in self.commandList['remove']:
