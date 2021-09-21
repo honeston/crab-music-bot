@@ -7,18 +7,19 @@ from Speak import createVoice
 
 class DiscordClient(discord.Client):
 
-    commandList = {"post":["-post","-p"],\
-                    "play":["-play"],\
-                    "join":["-join","-j"],\
-                    "leave":["-leave"],\
-                    "stop":["-stop","-s"],\
-                    "list":["-list"],\
-                    "next":["-next","-n"],\
-                    "remove":["-remove","-r"],\
-                    "save":["-save"],\
-                    "load":["-load"],\
-                    "speak":["-speak","-sp"],\
-                    "loop":["-loop"]}
+    commandList = {"post":{'command':["-post","-p"],'description':'曲を検索してリストに追加して再生 例:-post 閃光'},\
+                    "play":{'command':["-play"],'description':'再生開始'},\
+                    "join":{'command':["-join","-j"],'description':'音声チャンネルにbotを参加させる'},\
+                    "leave":{'command':["-leave"],'description':'botを音声チャンネルから切断させる'},\
+                    "stop":{'command':["-stop","-s"],'description':'曲の再生を止める'},\
+                    "list":{'command':["-list"],'description':'リストを表示'},\
+                    "next":{'command':["-next","-n"],'description':'次を再生'},\
+                    "remove":{'command':["-remove","-r"],'description':'選択した曲をリストから削除 例:-remove 2'},\
+                    "save":{'command':["-save"],'description':'リストを保存 例:-save test'},\
+                    "load":{'command':["-load"],'description':'リストを読み込み 例:-load test'},\
+                    "speak":{'command':["-speak","-sp"],'description':'文書を喋らせる 例:-sp おちんちん'},\
+                    "help":{'command':["-help"],'description':'ヘルプの表示'},\
+                    "loop":{'command':["-loop"],'description':'リストをループ再生させる'}}
 
     # 準備完了
     async def on_ready(self):
@@ -34,7 +35,7 @@ class DiscordClient(discord.Client):
         inputCommand = contentList[0]
         commandcheck = False
         for comands in self.commandList.values():
-            for comand in comands:
+            for comand in comands['command']:
                 if inputCommand == comand:
                     commandcheck = True
 
@@ -42,30 +43,31 @@ class DiscordClient(discord.Client):
             return
             
         if message.author.voice is None:
-            await message.channel.send("You are not connected to a voice channel.")
+            await message.channel.send("あなたはボイスチャンネルに接続していません")
             return
 
         if message.guild.voice_client is None:
             # ボイスチャンネルに接続する
             await message.author.voice.channel.connect()
-            await message.channel.send("connected")
+            await message.channel.send("接続しました")
+            # message.guild.voice_client.play(discord.FFmpegPCMAudio('connect.wav'))
 
         print('Message from {0.author}: {0.content}'.format(message))
 
         # post
-        if inputCommand in self.commandList['post']:
+        if inputCommand in self.commandList['post']['command']:
             if len(contentList) >= 2:
                 await self.popCommand(message,contentList)
         # play
-        elif inputCommand in self.commandList['play']:
+        elif inputCommand in self.commandList['play']['command']:
             playController.play(message)
 
         # join
-        elif inputCommand in self.commandList['join']:
+        elif inputCommand in self.commandList['join']['command']:
             print("join")
 
         # leave
-        elif inputCommand in self.commandList['leave']:
+        elif inputCommand in self.commandList['leave']['command']:
             if message.guild.voice_client is None:
                 await message.channel.send("接続していません。")
                 return
@@ -73,22 +75,22 @@ class DiscordClient(discord.Client):
             await message.guild.voice_client.disconnect()
 
         # stop
-        elif inputCommand in self.commandList['stop']:
+        elif inputCommand in self.commandList['stop']['command']:
             print("stop")
             playController.stop(message)
 
         # next
-        elif inputCommand in self.commandList['next']:
+        elif inputCommand in self.commandList['next']['command']:
             print("next")
             playController.next(message)
 
         # list
-        elif inputCommand in self.commandList['list']:
+        elif inputCommand in self.commandList['list']['command']:
             print("list")
             await self.showList(message)
 
         # save
-        elif inputCommand in self.commandList['save']:
+        elif inputCommand in self.commandList['save']['command']:
             print("save")
             if len(contentList) >= 2:
                 save(playController.playList,contentList[1])
@@ -96,7 +98,7 @@ class DiscordClient(discord.Client):
                 save(playController.playList)
 
         # load
-        elif inputCommand in self.commandList['load']:
+        elif inputCommand in self.commandList['load']['command']:
             print("load")
             playController.ini()
             if len(contentList) >= 2:
@@ -107,20 +109,31 @@ class DiscordClient(discord.Client):
             playController.next(message)
 
         # loop
-        elif inputCommand in self.commandList['loop']:
+        elif inputCommand in self.commandList['loop']['command']:
             print("loop")
             playController.loop(True)
         
+        # help
+        elif inputCommand in self.commandList['help']['command']:
+            print("help")
+             # embed の作成
+            embed = discord.Embed(title="🦀 help 🦀", color=0xff6347)
+            for k, cm in self.commandList.items():
+                embed.add_field(name="コマンド:"+str(cm['command']), value= str(cm['description']), inline=False)
+            await message.channel.send(embed=embed)
+
+        
         # speak
-        elif inputCommand in self.commandList['speak']:
+        elif inputCommand in self.commandList['speak']['command']:
             print("speak")
             # https://github.com/Hiroshiba/voicevox_engine
             if SPEAK_ISAVAILABLE:
                 filename = createVoice(contentList[1])
-                message.guild.voice_client.play(discord.FFmpegPCMAudio(filename))
+                source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(filename), volume=1)
+                message.guild.voice_client.play(source)
 
         # remove
-        elif inputCommand in self.commandList['remove']:
+        elif inputCommand in self.commandList['remove']['command']:
             if len(contentList) >= 2:
                 err = playController.remove(contentList[1])
                 if err == -1:

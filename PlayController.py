@@ -2,6 +2,7 @@
 import discord
 import pafy
 from threading import Timer
+import os
 
 class PlayController:
     playList = []
@@ -58,12 +59,15 @@ class PlayController:
                 self.nowPlayCount = self.nextPlayCount
                 url = self.playList[self.nextPlayCount]['url']
                 video= pafy.new(url)
-                best= video.getbestaudio()
-                print(video.length)
-                print(video.duration)
+                best = video.m4astreams[0]
+                if os.path.exists('./test.m4a'):
+                    os.remove('./test.m4a')
+                filename = best.download(filepath = './test.m4a')
+                print(filename)
                 self.nextPlayCount+=1
-                message.guild.voice_client.play(discord.FFmpegPCMAudio(best.url))
-                self.timer = Timer(video.length, self.playing, (message, ))
+                source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio('test.m4a'), volume=0.3)
+                message.guild.voice_client.play(source)
+                self.timer = Timer(video.length+2, self.playing, (message, ))
                 self.timer.start()
     
     # キューの追加
