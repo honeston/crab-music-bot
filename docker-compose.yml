@@ -1,0 +1,10 @@
+services:
+  voice:
+    image: hiroshiba/voicevox_engine:cpu-ubuntu20.04-latest
+  discordbot:
+    build: .
+    tty: true
+    volumes:
+      - .:/opt/sample-app
+    depends_on:
+      - voice
